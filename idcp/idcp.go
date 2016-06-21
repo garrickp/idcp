@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strconv"
 )
 
 func IsSameFile(c *Context, source, dest string) bool {
@@ -133,8 +134,7 @@ func fileCopy(c *Context, source, dest string) {
 	}
 	defer sourceFile.Close()
 
-	// Allow umask value to take over for the written file
-	destFile, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	destFile, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		c.SetError("unable to open destination file for writing", err)
 	}
@@ -186,7 +186,7 @@ func main() {
 		usrDest   string
 		source    string
 		dest      string
-		usrMode   int64
+		usrMode   string
 		owner     string
 		group     string
 		mode      os.FileMode
@@ -197,7 +197,7 @@ func main() {
 	flag.StringVar(&usrDest, "dest", "", "destination that the file should be copied to")
 	flag.StringVar(&owner, "owner", "", "owner of the destination file")
 	flag.StringVar(&group, "group", "", "group of the destination file")
-	flag.Int64Var(&usrMode, "mode", 0666, "file mode of the destination file")
+	flag.StringVar(&usrMode, "mode", "0644", "file mode of the destination file")
 	flag.Parse()
 
 	if usrSource == "" {
@@ -218,7 +218,11 @@ func main() {
 	source = CleanupPath(usrSource)
 	dest = CleanupPath(usrDest)
 
-	mode = os.FileMode(usrMode)
+	parsedMode, parseErr := strconv.ParseInt(usrMode, 8, 32)
+	if parseErr != nil {
+		c.SetError("invalid mode provided", parseErr)
+	}
+	mode = os.FileMode(parsedMode)
 
 	c.AddValue("source", source)
 	c.AddValue("destination", dest)
