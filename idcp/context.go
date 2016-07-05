@@ -47,19 +47,19 @@ func (c *Context) SetError(comment string, err error) {
 }
 
 func (c *Context) Begin() {
-	EmitTimestamp("start")
-	EmitValue("function", c.FunctionName)
+	c.EmitValue("start", "")
+	c.EmitValue("function", c.FunctionName)
 }
 
 func (c *Context) Finish() {
 	for key, value := range c.AdditionalValues {
-		EmitValue(key, value)
+		c.EmitValue(key, value)
 	}
 
-	EmitChanged(c.Changed)
-	EmitValue("comment", c.Comment)
-	EmitValue("error", c.ErrString)
-	EmitTimestamp("finish")
+	c.EmitChanged(c.Changed)
+	c.EmitValue("comment", c.Comment)
+	c.EmitValue("error", c.ErrString)
+	c.EmitValue("finish", "")
 
 	if len(c.ErrString) != 0 {
 		os.Exit(1)
@@ -67,25 +67,20 @@ func (c *Context) Finish() {
 	os.Exit(0)
 }
 
-func EmitValue(key, value string) {
-	_, err := fmt.Printf("%-20s%s\n", key, value)
+func (c *Context) EmitValue(key, value string) {
+	timestamp := time.Now().Format(time.RFC3339)
+	_, err := fmt.Printf("%s\t%s\t%-12s\t%s\n", timestamp, c.FunctionName, key, value)
 	if err != nil {
 		log.Fatal("Error emitting", key, "value:", err.Error())
 	}
 	return
 }
 
-func EmitTimestamp(key string) {
-	timestamp := time.Now().Format(time.RFC3339)
-	EmitValue(key, timestamp)
-	return
-}
-
-func EmitChanged(changed bool) {
+func (c *Context) EmitChanged(changed bool) {
 	changedStr := "false"
 	if changed {
 		changedStr = "true"
 	}
 
-	EmitValue("changed", changedStr)
+	c.EmitValue("changed", changedStr)
 }
