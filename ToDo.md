@@ -31,10 +31,6 @@ output.
 Ensure a package is installed. Support specification of the repo as part of the
 arguments, including any signing keys.
 
-## idrm
-
-Ensure a file does not exist.
-
 ## idsvc
 
 Abstract away the thirty ways to manage a service.
