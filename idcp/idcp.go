@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
+	"github.com/garrickp/idtools/idlib"
 	"io"
 	"log"
 	"os"
@@ -11,7 +12,7 @@ import (
 	"strconv"
 )
 
-func IsSameFile(c *Context, source, dest string) bool {
+func IsSameFile(c *idlib.Context, source, dest string) bool {
 	var sourceInfo os.FileInfo
 	var destInfo os.FileInfo
 	var err error
@@ -101,8 +102,8 @@ func IsSameFile(c *Context, source, dest string) bool {
 	This operation is NOT idempotant; Go does not offer a friendly way to obtain
 	the uid, gid, or mode of a file.
 */
-func SetPerms(c *Context, path, owner, group string, mode os.FileMode) {
-	if !OSSupportChown() {
+func SetPerms(c *idlib.Context, path, owner, group string, mode os.FileMode) {
+	if !idlib.OSSupportChown() {
 		return
 	}
 
@@ -111,10 +112,10 @@ func SetPerms(c *Context, path, owner, group string, mode os.FileMode) {
 	gid := os.Getgid()
 
 	if owner != "" {
-		uid, gid = LookupUser(owner)
+		uid, gid = idlib.LookupUser(owner)
 	}
 	if group != "" {
-		gid = LookupGroup(group)
+		gid = idlib.LookupGroup(group)
 	}
 
 	if err := os.Chown(path, uid, gid); err != nil {
@@ -127,7 +128,7 @@ func SetPerms(c *Context, path, owner, group string, mode os.FileMode) {
 
 }
 
-func fileCopy(c *Context, source, dest string) {
+func fileCopy(c *idlib.Context, source, dest string) {
 	sourceFile, err := os.Open(source)
 	if err != nil {
 		c.SetError("unable to open source file for reading", err)
@@ -149,7 +150,7 @@ func fileCopy(c *Context, source, dest string) {
 	return
 }
 
-func IdempotantCopy(c *Context, source, dest, owner, group string, mode os.FileMode) {
+func IdempotantCopy(c *idlib.Context, source, dest, owner, group string, mode os.FileMode) {
 
 	if !IsSameFile(c, source, dest) {
 
@@ -192,7 +193,6 @@ func main() {
 		mode      os.FileMode
 	)
 
-	// XXX Add the following flags: owner, group, mode
 	flag.StringVar(&usrSource, "source", "", "source of the file to be copied")
 	flag.StringVar(&usrDest, "dest", "", "destination that the file should be copied to")
 	flag.StringVar(&owner, "owner", "", "owner of the destination file")
@@ -212,11 +212,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	c := NewContext("copy")
+	c := idlib.NewContext("copy")
 	c.Begin()
 
-	source = CleanupPath(usrSource)
-	dest = CleanupPath(usrDest)
+	source = idlib.CleanupPath(usrSource)
+	dest = idlib.CleanupPath(usrDest)
 
 	parsedMode, parseErr := strconv.ParseInt(usrMode, 8, 32)
 	if parseErr != nil {
